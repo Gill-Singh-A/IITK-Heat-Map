@@ -34,6 +34,11 @@ default_users = ["root"]
 with open("users.txt", 'r') as file:
     users = file.read().split('\n')
 
+with open("template/template_start.html", 'r') as file:
+    template_start = file.read()
+with open("template/template_end.html", 'r') as file:
+    template_end = file.read()
+
 def connectSSH(ip, user, password, port=22, timeout=30):
     try:
         t1 = time()
@@ -45,6 +50,12 @@ def connectSSH(ip, user, password, port=22, timeout=30):
         return ssh, t2-t1
     except Exception as err:
         return err, -1
+def createPage():
+    page = template_start
+    for 
+    page += template_end
+    with open("ccpc.html", 'w') as file:
+        file.write(page)
 
 if __name__ == "__main__":
     arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"),
@@ -66,7 +77,7 @@ if __name__ == "__main__":
         exit(0)
     try:
         while True:
-            for ip in ccpc_ips:
+            for ip in ccpc_ips.keys():
                 while ccpc_info[ip]["authenticated"] == False:
                     ssh_client, authentication_time = connectSSH(ip, arguments.user, password, 22, timeout)
                     if authentication_time != -1:
