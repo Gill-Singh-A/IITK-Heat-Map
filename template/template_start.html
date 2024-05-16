@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Computer Status</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                padding: 12px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            tr:hover {
+                background-color: #f5f5f5;
+            }
+            .occupied {
+                background-color: #ffe082;
+            }
+            .free {
+                background-color: #c8e6c9;
+            }
+            .power-off {
+                background-color: #ffcdd2;
+            }
+        </style>
+    </head>
+    <body>
+        <table>
+          <thead>
+            <tr>
+              <th>Computer</th>
+              <th>User</th>
+              <th>SSH Users</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
