@@ -59,7 +59,7 @@ def createPage():
             status = "free"
         if ccpc_info[ip]["authenticated"] == False:
             status = "power-off"
-        page += f"<tr class={status}><td>{ccpc_ips[ip]}</td><td>{(','.join(users['users'])) if len(users['users']) > 0 else '-'}</td><td>{(','.join(users['ssh_users'])) if len(users['ssh_users']) > 0 else '-'}</td><td>{status.upper()}</td></tr>"
+        page += f"<tr class={status}><td>{ccpc_ips[ip]}</td><td>{(','.join(users['users'])) if len(users['users']) > 0 else '-'}</td><td>{(','.join(users['ssh_users'])) if len(users['ssh_users']) > 0 else '-'}</td><td>{status.upper()}</td></tr>\n"
     page += template_end
     with open("ccpc.html", 'w') as file:
         file.write(page)
@@ -106,6 +106,10 @@ if __name__ == "__main__":
                 ccpc_users[ip]["users"] = users
                 display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => Users:{','.join(users)}, SSH Users:{','.join(ssh_users)}")
             createPage()
+            ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.user, password)
+            with open("ccpc.html", 'rb') as file:
+                ftp_server.storbinary(f"STOR /www/amansg22/www/ccpc.html", file)
+            ftp_server.quit()
     except KeyboardInterrupt:
         display('*', f"Keyboard Interrupt Detected...", start='\n')
         display(':', "Exiting")
