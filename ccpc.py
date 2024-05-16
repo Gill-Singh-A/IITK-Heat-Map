@@ -33,6 +33,8 @@ ccpc_info = {ip: {"ssh_client": None, "authenticated": False, "authentication_ti
 timeout = 1
 webhome_ip = gethostbyname("webhome.cc.iitk.ac.in")
 default_users = ["root"]
+with open("users.txt", 'r') as file:
+    users = file.read().split('\n')
 
 def connectSSH(ip, user, password, port=22, timeout=30):
     try:
@@ -84,9 +86,9 @@ if __name__ == "__main__":
                 if ccpc_info[ip]["error"] != None:
                     continue
                 stdin, stdout, stderr = ccpc_info[ip]["ssh_client"].exec_command("ps -aux | grep sshd")
-                ssh_users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users]))
+                ssh_users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users and line.split(' ')[0] in users]))
                 stdin, stdout, stderr = ccpc_info[ip]["ssh_client"].exec_command("ps -aux | grep gnome-session")
-                users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users]))
+                users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users and line.split(' ')[0] in users]))
                 users.sort()
                 ccpc_users[ip]["ssh_users"] = ssh_users
                 ccpc_users[ip]["users"] = users
