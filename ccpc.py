@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
 
-import paramiko
+import paramiko, json
 from getpass import getpass
 from datetime import date
+from socket import gethostbyname
 from optparse import OptionParser
-from multiprocessing import Pool, cpu_count, Lock
 from colorama import Fore, Back, Style
 from time import strftime, localtime, time
 
@@ -29,10 +29,10 @@ with open("ccpc_ips.txt", 'r') as file:
     ccpc_ips = [ip for ip in file.read().split('\n') if ip != '']
 total_ips = len(ccpc_ips)
 ccpc_users = {ip: [] for ip in ccpc_ips}
-timeout = 30
-
-parallel_threads = cpu_count()
-lock = Lock()
+ccpc_info = {ip: {"ssh_client": None, "authenticated": False, "authentication_time": None, "error": None} for ip in ccpc_ips}
+timeout = 1
+webhome_ip = gethostbyname("webhome.cc.iitk.ac.in")
+default_users = ["root"]
 
 def connectSSH(ip, user, password, port=22, timeout=30):
     try:
@@ -40,27 +40,22 @@ def connectSSH(ip, user, password, port=22, timeout=30):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(ip, port=port, username=user, password=password, allow_agent=False, timeout=timeout)
-        with lock:
-            display('+', f"Authenticated => {Back.MAGENTA}{ip}{Back.RESET}")
+        display('+', f"Authenticated => {Back.MAGENTA}{ip}{Back.RESET}")
         t2 = time()
         return ssh, t2-t1
     except Exception as err:
         return err, -1
-def sshHandler(ip, user, password, timeout, verbose=False):
+def webhomeHandler(user, password, timeout):
     while True:
-        ssh_client, authentication_time = connectSSH(ip, user, password, 22, timeout)
+        ssh_client, authentication_time = connectSSH(webhome_ip, user, password, 22, timeout)
         if authentication_time != -1:
             break
-        display('-', f"Error Occurred while Connecting to {Back.MAGENTA}{ip}{Back.RESET} => {Back.YELLOW}{ssh_client}{Back.RESET}")
+        display('-', f"Error Occured while Connecting to {Back.MAGENTA}WEBHOME{Back.RESET} => {Back.YELLOW}{ssh_client}{Back.RESET}")
     while True:
-        stdin, stdout, stderr = ssh_client.exec_command("ps -aux")
-        users = list(set([line.split(' ')[0] for line in stdout.readlines()]))
-        users.sort()
         with lock:
-            if verbose:
-                display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => {','.join(users)}")
-            ccpc_users[ip] = users
-
+            users = list(set([current_pc_users for current_pc_users in ccpc_users.values()]))
+            with open("users.json", 'w') as file:
+                json.dump(users, file)
 if __name__ == "__main__":
     arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"),
                               ('-t', "--timeout", "timeout", f"Timeout for Authenticating to a Linux Lab Computer (Default={timeout}seconds)"))
@@ -73,11 +68,29 @@ if __name__ == "__main__":
     else:
         arguments.timeout = int(arguments.timeout)
     display(':', f"Linux Lab Computers = {Back.MAGENTA}{len(ccpc_ips)}{Back.RESET}")
-    pool = Pool(parallel_threads)
-    threads = []
-    for ip in ccpc_ips:
-        threads.append(pool.apply_async(sshHandler, (ip, arguments.user, password, arguments.timeout)))
-    for thread in threads:
-        thread.get()
-    pool.close()
-    pool.join()
+    default_users.append(arguments.user)
+    try:
+        while True:
+            for ip in ccpc_ips:
+                while ccpc_info[ip]["authenticated"] == False:
+                    ssh_client, authentication_time = connectSSH(ip, arguments.user, password, 22, timeout)
+                    if authentication_time != -1:
+                        ccpc_info[ip]["authenticated"] = True
+                        ccpc_info[ip]["ssh_client"] = ssh_client
+                        ccpc_info[ip]["authentication_time"] = authentication_time
+                    else:
+                        ccpc_info[ip]["error"] = ssh_client
+                        display('-', f"Error Occurred while Connecting to {Back.MAGENTA}{ip}{Back.RESET} => {Back.YELLOW}{ssh_client}{Back.RESET}")
+                    break
+                if ccpc_info[ip]["error"] != None:
+                    continue
+                stdin, stdout, stderr = ccpc_info[ip]["ssh_client"].exec_command("ps -aux")
+                users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users]))
+                users.sort()
+                ccpc_users[ip] = users
+                display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => {','.join(users)}")
+    except KeyboardInterrupt:
+        display('*', f"Keyboard Interrupt Detected...", start='\n')
+        display(':', "Exiting")
+    except Exception as error:
+        display('-', f"Error Occured => {Back.YELLOW}{error}{Back.RESET}")
