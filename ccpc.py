@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+from getpass import getpass
 from datetime import date
 from optparse import OptionParser
 from colorama import Fore, Back, Style
@@ -23,4 +24,8 @@ def get_arguments(*args):
     return parser.parse_args()[0]
 
 if __name__ == "__main__":
-    pass
+    arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"))
+    if not arguments.user:
+        display('-', f"Please Provide a {Back.YELLOW}CC User ID!{Back.RESET}")
+        exit(0)
+    password = getpass(f"Enter Password for {arguments.user} : ")
