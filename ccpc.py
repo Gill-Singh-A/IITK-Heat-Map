@@ -1,9 +1,8 @@
 #! /usr/bin/env python3
 
-import paramiko, json
+import paramiko, ftplib
 from getpass import getpass
 from datetime import date
-from socket import gethostbyname
 from optparse import OptionParser
 from colorama import Fore, Back, Style
 from time import strftime, localtime, time
@@ -31,7 +30,6 @@ total_ips = len(ccpc_ips)
 ccpc_users = {ip: {"ssh_users": [], "users": []} for ip in ccpc_ips}
 ccpc_info = {ip: {"ssh_client": None, "authenticated": False, "authentication_time": None, "error": None} for ip in ccpc_ips}
 timeout = 1
-webhome_ip = gethostbyname("webhome.cc.iitk.ac.in")
 default_users = ["root"]
 with open("users.txt", 'r') as file:
     users = file.read().split('\n')
@@ -47,16 +45,6 @@ def connectSSH(ip, user, password, port=22, timeout=30):
         return ssh, t2-t1
     except Exception as err:
         return err, -1
-def webhomeHandler(user, password, timeout):
-    while True:
-        ssh_client, authentication_time = connectSSH(webhome_ip, user, password, 22, timeout)
-        if authentication_time != -1:
-            break
-        display('-', f"Error Occured while Connecting to {Back.MAGENTA}WEBHOME{Back.RESET} => {Back.YELLOW}{ssh_client}{Back.RESET}")
-    while True:
-        users = list(set([current_pc_users for current_pc_users in ccpc_users.values()]))
-        with open("users.json", 'w') as file:
-            json.dump(users, file)
 if __name__ == "__main__":
     arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"),
                               ('-t', "--timeout", "timeout", f"Timeout for Authenticating to a Linux Lab Computer (Default={timeout}seconds)"))
@@ -70,6 +58,11 @@ if __name__ == "__main__":
         arguments.timeout = int(arguments.timeout)
     display(':', f"Linux Lab Computers = {Back.MAGENTA}{len(ccpc_ips)}{Back.RESET}")
     default_users.append(arguments.user)
+    try:
+        ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.user, password)
+    except Exception as error:
+        display('-', f"Error Occured while Connecting to {Back.MAGENTA}WEBHOME{Back.RESET} => {Back.YELLOW}{error}{Back.RESET}")
+        exit(0)
     try:
         while True:
             for ip in ccpc_ips:
