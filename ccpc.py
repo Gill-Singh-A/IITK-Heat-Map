@@ -24,7 +24,7 @@ def get_arguments(*args):
         parser.add_option(arg[0], arg[1], dest=arg[2], help=arg[3])
     return parser.parse_args()[0]
 
-with open("ccpc_ips.csv", 'r') as file:
+with open("ccpc.csv", 'r') as file:
     ccpc_ips = {line.split(',')[0]: line.split(',')[1] for line in file.read().split('\n') if line != ''}
 total_ips = len(ccpc_ips)
 ccpc_users = {ip: {"ssh_users": [], "users": []} for ip in ccpc_ips}
@@ -52,7 +52,14 @@ def connectSSH(ip, user, password, port=22, timeout=30):
         return err, -1
 def createPage():
     page = template_start
-    for 
+    for ip, users in ccpc_users.items():
+        if len(users["users"]) > 0:
+            status = "occupied"
+        else:
+            status = "free"
+        if ccpc_info[ip]["authenticated"] == False:
+            status = "power-off"
+        page += f"<tr class={status}><td>{ccpc_ips[ip]}</td><td>{(','.join(users['users'])) if len(users['users']) > 0 else '-'}</td><td>{(','.join(users['ssh_users'])) if len(users['ssh_users']) > 0 else '-'}</td><td>{status.upper()}</td></tr>"
     page += template_end
     with open("ccpc.html", 'w') as file:
         file.write(page)
@@ -98,6 +105,7 @@ if __name__ == "__main__":
                 ccpc_users[ip]["ssh_users"] = ssh_users
                 ccpc_users[ip]["users"] = users
                 display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => Users:{','.join(users)}, SSH Users:{','.join(ssh_users)}")
+            createPage()
     except KeyboardInterrupt:
         display('*', f"Keyboard Interrupt Detected...", start='\n')
         display(':', "Exiting")
