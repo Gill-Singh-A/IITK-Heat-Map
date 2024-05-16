@@ -28,7 +28,7 @@ def get_arguments(*args):
 with open("ccpc_ips.txt", 'r') as file:
     ccpc_ips = [ip for ip in file.read().split('\n') if ip != '']
 total_ips = len(ccpc_ips)
-ccpc_users = {ip: [] for ip in ccpc_ips}
+ccpc_users = {ip: {"ssh_users": [], "users": []} for ip in ccpc_ips}
 ccpc_info = {ip: {"ssh_client": None, "authenticated": False, "authentication_time": None, "error": None} for ip in ccpc_ips}
 timeout = 1
 webhome_ip = gethostbyname("webhome.cc.iitk.ac.in")
@@ -52,10 +52,9 @@ def webhomeHandler(user, password, timeout):
             break
         display('-', f"Error Occured while Connecting to {Back.MAGENTA}WEBHOME{Back.RESET} => {Back.YELLOW}{ssh_client}{Back.RESET}")
     while True:
-        with lock:
-            users = list(set([current_pc_users for current_pc_users in ccpc_users.values()]))
-            with open("users.json", 'w') as file:
-                json.dump(users, file)
+        users = list(set([current_pc_users for current_pc_users in ccpc_users.values()]))
+        with open("users.json", 'w') as file:
+            json.dump(users, file)
 if __name__ == "__main__":
     arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"),
                               ('-t', "--timeout", "timeout", f"Timeout for Authenticating to a Linux Lab Computer (Default={timeout}seconds)"))
@@ -84,11 +83,14 @@ if __name__ == "__main__":
                     break
                 if ccpc_info[ip]["error"] != None:
                     continue
-                stdin, stdout, stderr = ccpc_info[ip]["ssh_client"].exec_command("ps -aux")
+                stdin, stdout, stderr = ccpc_info[ip]["ssh_client"].exec_command("ps -aux | grep sshd")
+                ssh_users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users]))
+                stdin, stdout, stderr = ccpc_info[ip]["ssh_client"].exec_command("ps -aux | grep gnome-session")
                 users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users]))
                 users.sort()
-                ccpc_users[ip] = users
-                display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => {','.join(users)}")
+                ccpc_users[ip]["ssh_users"] = ssh_users
+                ccpc_users[ip]["users"] = users
+                display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => Users:{','.join(users)}, SSH Users:{','.join(ssh_users)}")
     except KeyboardInterrupt:
         display('*', f"Keyboard Interrupt Detected...", start='\n')
         display(':', "Exiting")
