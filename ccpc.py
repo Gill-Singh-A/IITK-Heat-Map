@@ -24,8 +24,8 @@ def get_arguments(*args):
         parser.add_option(arg[0], arg[1], dest=arg[2], help=arg[3])
     return parser.parse_args()[0]
 
-with open("ccpc_ips.txt", 'r') as file:
-    ccpc_ips = [ip for ip in file.read().split('\n') if ip != '']
+with open("ccpc_ips.csv", 'r') as file:
+    ccpc_ips = {line.split(',')[0]: line.split(',')[1] for line in file.read().split('\n') if line != ''}
 total_ips = len(ccpc_ips)
 ccpc_users = {ip: {"ssh_users": [], "users": []} for ip in ccpc_ips}
 ccpc_info = {ip: {"ssh_client": None, "authenticated": False, "authentication_time": None, "error": None} for ip in ccpc_ips}
@@ -45,6 +45,7 @@ def connectSSH(ip, user, password, port=22, timeout=30):
         return ssh, t2-t1
     except Exception as err:
         return err, -1
+
 if __name__ == "__main__":
     arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"),
                               ('-t', "--timeout", "timeout", f"Timeout for Authenticating to a Linux Lab Computer (Default={timeout}seconds)"))
