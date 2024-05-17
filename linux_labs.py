@@ -67,7 +67,7 @@ def createPage():
 if __name__ == "__main__":
     arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"),
                               ('-t', "--timeout", "timeout", f"Timeout for Authenticating to a Linux Lab Computer (Default={timeout}seconds)"),
-                              ('-l', "--location", "location", f"Location in Campus (Linux Lab:ccpc)"))
+                              ('-l', "--location", "location", f"Location in Campus (Linux Lab:ccpc, kd_lab)"))
     if not arguments.user:
         display('-', f"Please Provide a {Back.YELLOW}CC User ID!{Back.RESET}")
         exit(0)
