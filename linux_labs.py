@@ -83,7 +83,7 @@ if __name__ == "__main__":
         location = arguments.location
     password = getpass(f"Enter Password for {arguments.user} : ")
     if arguments.webhome_user:
-        webhome_password = getpass(f"Enter Password for {arguments.webhome}@webhome : ")
+        webhome_password = getpass(f"Enter Password for {arguments.webhome_user}@webhome : ")
     else:
         arguments.webhome_user = arguments.user
         webhome_password = password
