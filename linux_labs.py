@@ -2,7 +2,7 @@
 
 import paramiko, ftplib
 from getpass import getpass
-from datetime import date
+from datetime import date, datetime
 from optparse import OptionParser
 from colorama import Fore, Back, Style
 from time import strftime, localtime, time
@@ -24,6 +24,30 @@ def get_arguments(*args):
         parser.add_option(arg[0], arg[1], dest=arg[2], help=arg[3])
     return parser.parse_args()[0]
 
+def isLeap(year):
+    if year % 4 == 0:
+        if year % 100 == 0:
+            if year % 400 == 0:
+                return True
+            else:
+                return False
+        else:
+            return True
+    else:
+        return False
+months = {"Jan": 0,
+          "Feb": 31,
+          "Mar": 60 if isLeap(datetime.now().year) else 59,
+          "Apr": 91 if isLeap(datetime.now().year) else 90,
+          "May": 121 if isLeap(datetime.now().year) else  120,
+          "Jun": 152 if isLeap(datetime.now().year) else  151,
+          "Jul": 182 if isLeap(datetime.now().year) else  181,
+          "Aug": 213 if isLeap(datetime.now().year) else  212,
+          "Sep": 244 if isLeap(datetime.now().year) else  243,
+          "Oct": 274 if isLeap(datetime.now().year) else  273,
+          "Nov": 305 if isLeap(datetime.now().year) else  304,
+          "Dec": 335 if isLeap(datetime.now().year) else  334}
+
 ips = None
 location = None
 total_ips = None
@@ -32,7 +56,7 @@ location_info = None
 timeout = 1
 default_users = ["root"]
 with open("users.txt", 'r') as file:
-    users = file.read().split('\n')
+    all_cc_users = file.read().split('\n')
 
 with open("template/template_start.html", 'r') as file:
     template_start = file.read()
@@ -114,11 +138,30 @@ if __name__ == "__main__":
                     break
                 if location_info[ip]["error"] != None:
                     continue
-                stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("ps -aux | grep sshd")
-                ssh_users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users and line.split(' ')[0] in users]))
-                stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("ps -aux | grep gnome-session")
-                users = list(set([line.split(' ')[0] for line in stdout.readlines() if line.split(' ')[0] not in default_users and line.split(' ')[0] in users]))
-                users.sort()
+                stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("last | grep 'still logged in'")
+                output = stdout.readlines()
+                users = []
+                ssh_users = []
+                for line in output:
+                    for spaces in range(20, 1, -1):
+                        line = line.replace(' '*spaces, ' '*(spaces-1))
+                    details = line.split(' ')
+                    user = details[0]
+                    if user not in default_users and user in all_cc_users:
+                        month = details[4]
+                        login_date = int(details[5])
+                        hour = int(details[6].split(':')[0])
+                        minutes = int(details[6].split(':')[1])
+                        current_month = datetime.now().strftime("%B")[:3]
+                        current_date = datetime.now().day
+                        current_hour = datetime.now().hour
+                        current_minute = datetime.now().minute
+                        login_time = (months[current_month]+current_date+current_hour/24+current_minute/(24*60))-(months[month]+login_date+hour/24+minutes/(60*24))
+                        if login_time < 1:
+                            if len(details[2]) > 7:
+                                ssh_users.append(user)
+                            else:
+                                users.append(user)
                 location_users[ip]["ssh_users"] = ssh_users
                 location_users[ip]["users"] = users
                 display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => Users:{','.join(users)}, SSH Users:{','.join(ssh_users)}")
