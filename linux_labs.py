@@ -77,13 +77,13 @@ def connectSSH(ip, user, password, port=22, timeout=30):
 def createPage():
     page = template_start
     for ip, users in location_users.items():
-        if len(users["users"]) > 0:
+        if users["users"] != None:
             status = "occupied"
         else:
             status = "free"
         if location_info[ip]["authenticated"] == False:
             status = "power-off"
-        page += f"<tr class={status}><td>{ips[ip]}</td><td>{(','.join(users['users'])) if len(users['users']) > 0 else '-'}</td><td>{(','.join(users['ssh_users'])) if len(users['ssh_users']) > 0 else '-'}</td><td>{status.upper()}</td></tr>\n"
+        page += f"<tr class={status}><td>{ips[ip]}</td><td>{users['users'] if users['users'] != None else '-'}</td><td>{(','.join(users['ssh_users'])) if len(users['ssh_users']) > 0 else '-'}</td><td>{status.upper()}</td></tr>\n"
     page += template_end
     with open(f"pages/{location}.html", 'w') as file:
         file.write(page)
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     with open(f"csv/{location}.csv", 'r') as file:
         ips = {line.split(',')[0]: line.split(',')[1] for line in file.read().split('\n') if line != ''}
     total_ips = len(ips)
-    location_users = {ip: {"ssh_users": [], "users": []} for ip in ips}
+    location_users = {ip: {"ssh_users": [], "users": None} for ip in ips}
     location_info = {ip: {"ssh_client": None, "authenticated": False, "authentication_time": None, "error": None} for ip in ips}
     display(':', f"IPs = {Back.MAGENTA}{total_ips}{Back.RESET}")
     try:
@@ -140,8 +140,9 @@ if __name__ == "__main__":
                     continue
                 stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("last | grep 'still logged in'")
                 output = stdout.readlines()
-                users = []
+                users = None
                 ssh_users = []
+                last_login_time = 1
                 for line in output:
                     for spaces in range(20, 1, -1):
                         line = line.replace(' '*spaces, ' '*(spaces-1))
@@ -160,11 +161,12 @@ if __name__ == "__main__":
                         if login_time < 1:
                             if len(details[2]) > 7:
                                 ssh_users.append(user)
-                            else:
-                                users.append(user)
+                            elif login_time < last_login_time:
+                                last_login_time = login_time
+                                users = user
                 location_users[ip]["ssh_users"] = ssh_users
                 location_users[ip]["users"] = users
-                display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => Users:{','.join(users)}, SSH Users:{','.join(ssh_users)}")
+                display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => Users:{users}, SSH Users:{','.join(ssh_users)}")
             createPage()
             ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.webhome_user, webhome_password)
             with open(f"pages/{location}.html", 'rb') as file:
