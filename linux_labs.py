@@ -66,6 +66,7 @@ def createPage():
 
 if __name__ == "__main__":
     arguments = get_arguments(('-u', "--user", "user", "Computer Center (CC) User ID"),
+                              ('-w', "--webhome-user", "webhome_user", "Webhome User (Default=CC User ID)"),
                               ('-t', "--timeout", "timeout", f"Timeout for Authenticating to a Linux Lab Computer (Default={timeout}seconds)"),
                               ('-l', "--location", "location", f"Location in Campus (Linux Lab:ccpc, kd_lab)"))
     if not arguments.user:
@@ -81,6 +82,11 @@ if __name__ == "__main__":
     else:
         location = arguments.location
     password = getpass(f"Enter Password for {arguments.user} : ")
+    if arguments.webhome_user:
+        webhome_password = getpass(f"Enter Password for {arguments.webhome}@webhome : ")
+    else:
+        arguments.webhome_user = arguments.user
+        webhome_password = password
     default_users.append(arguments.user)
     with open(f"csv/{location}.csv", 'r') as file:
         ips = {line.split(',')[0]: line.split(',')[1] for line in file.read().split('\n') if line != ''}
@@ -89,7 +95,7 @@ if __name__ == "__main__":
     location_info = {ip: {"ssh_client": None, "authenticated": False, "authentication_time": None, "error": None} for ip in ips}
     display(':', f"IPs = {Back.MAGENTA}{total_ips}{Back.RESET}")
     try:
-        ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.user, password)
+        ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.webhome_user, webhome_password)
     except Exception as error:
         display('-', f"Error Occured while Connecting to {Back.MAGENTA}WEBHOME{Back.RESET} => {Back.YELLOW}{error}{Back.RESET}")
         exit(0)
@@ -117,7 +123,7 @@ if __name__ == "__main__":
                 location_users[ip]["users"] = users
                 display(':', f"{Back.MAGENTA}{ip}{Back.RESET} => Users:{','.join(users)}, SSH Users:{','.join(ssh_users)}")
             createPage()
-            ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.user, password)
+            ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.webhome_user, webhome_password)
             with open(f"pages/{location}.html", 'rb') as file:
                 ftp_server.storbinary(f"STOR /www/{arguments.user}/www/{location}.html", file)
             ftp_server.quit()
