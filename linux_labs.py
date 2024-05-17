@@ -125,7 +125,7 @@ if __name__ == "__main__":
             createPage()
             ftp_server = ftplib.FTP("webhome.cc.iitk.ac.in", arguments.webhome_user, webhome_password)
             with open(f"pages/{location}.html", 'rb') as file:
-                ftp_server.storbinary(f"STOR /www/{arguments.user}/www/{location}.html", file)
+                ftp_server.storbinary(f"STOR /www/{arguments.webhome_user}/www/{location}.html", file)
             ftp_server.quit()
     except KeyboardInterrupt:
         display('*', f"Keyboard Interrupt Detected...", start='\n')
