@@ -172,7 +172,7 @@ if __name__ == "__main__":
                         if login_time < 1:
                             if len(details[2]) > 7:
                                 ssh_users.append(user)
-                            elif login_time < last_login_time:
+                            elif login_time < last_login_time and month == current_month and login_date == current_date:
                                 last_login_time = login_time
                                 users = user
                 location_users[ip]["ssh_users"] = ssh_users
