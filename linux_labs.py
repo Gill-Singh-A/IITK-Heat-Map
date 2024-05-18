@@ -76,6 +76,17 @@ def connectSSH(ip, user, password, port=22, timeout=30):
         return err, -1
 def createPage():
     page = template_start
+    page += f"<h1>Last Updated : {datetime.now().hour}:{datetime.now().minute} {datetime.now().day} {datetime.now().strftime('%B')} {datetime.now().year}</h1>"
+    page += """<table>
+          <thead>
+            <tr>
+              <th>Computer</th>
+              <th>User</th>
+              <th>SSH Users</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>"""
     for ip, users in location_users.items():
         if users["users"] != None:
             status = "occupied"
