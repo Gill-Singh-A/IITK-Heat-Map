@@ -149,7 +149,7 @@ if __name__ == "__main__":
                     break
                 if location_info[ip]["error"] != None:
                     continue
-                stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("last | grep 'still logged in'")
+                stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("who")
                 output = stdout.readlines()
                 users = None
                 ssh_users = []
@@ -160,19 +160,28 @@ if __name__ == "__main__":
                     details = line.split(' ')
                     user = details[0]
                     if user not in default_users and user in all_cc_users:
-                        month = details[4]
-                        login_date = int(details[5])
-                        hour = int(details[6].split(':')[0])
-                        minutes = int(details[6].split(':')[1])
+                        if '-' in details[2]:
+                            month = int(details[2].split('-')[1])
+                            month = list(months.keys())[month-1]
+                            login_date = int(details[2].split('-')[2])
+                            hour = int(details[3].split(':')[0])
+                            minutes = int(details[3].split(':')[1])
+                            length_for_user = len(details[4])
+                        else:
+                            month = details[2]
+                            login_date = int(details[3])
+                            hour = int(details[4].split(':')[0])
+                            minutes = int(details[4].split(':')[1])
+                            length_for_user = len(details[5])
                         current_month = datetime.now().strftime("%B")[:3]
                         current_date = datetime.now().day
                         current_hour = datetime.now().hour
                         current_minute = datetime.now().minute
                         login_time = (months[current_month]+current_date+current_hour/24+current_minute/(24*60))-(months[month]+login_date+hour/24+minutes/(60*24))
-                        if login_time < 1:
-                            if len(details[2]) > 7:
+                        if login_time < 0.5:
+                            if length_for_user > 10:
                                 ssh_users.append(user)
-                            elif login_time < last_login_time and month == current_month and login_date == current_date:
+                            elif login_time < last_login_time:
                                 last_login_time = login_time
                                 users = user
                 location_users[ip]["ssh_users"] = ssh_users
