@@ -53,6 +53,7 @@ location = None
 total_ips = None
 location_users = None
 location_info = None
+user_timings = {None: ''}
 timeout = 1
 default_users = ["root"]
 with open("users.txt", 'r') as file:
@@ -94,7 +95,7 @@ def createPage():
             status = "free"
         if location_info[ip]["authenticated"] == False:
             status = "power-off"
-        page += f"<tr class={status}><td>{ips[ip]}</td><td>{users['users'] if users['users'] != None else '-'}</td><td>{(','.join(users['ssh_users'])) if len(users['ssh_users']) > 0 else '-'}</td><td>{status.upper()}</td></tr>\n"
+        page += f"<tr class={status}><td>{ips[ip]}</td><td onclick=\"alert('{user_timings[users['users']]}');\">{users['users'] if users['users'] != None else '-'}</td><td>{(','.join(users['ssh_users'])) if len(users['ssh_users']) > 0 else '-'}</td><td>{status.upper()}</td></tr>\n"
     page += template_end
     with open(f"pages/{location}.html", 'w') as file:
         file.write(page)
@@ -182,6 +183,7 @@ if __name__ == "__main__":
                             if length_for_user > 10:
                                 ssh_users.append(user)
                             elif login_time < last_login_time:
+                                user_timings[user] = f"{hour}:{'0'*(2-len(str(minutes)))+str(minutes)} {login_date} {month}"
                                 last_login_time = login_time
                                 users = user
                 location_users[ip]["ssh_users"] = ssh_users
