@@ -151,7 +151,7 @@ if __name__ == "__main__":
                         break
                     if location_info[ip]["error"] != None:
                         continue
-                    stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("who | grep ':'")
+                    stdin, stdout, stderr = location_info[ip]["ssh_client"].exec_command("who")
                     output = stdout.readlines()
                     users = None
                     ssh_users = []
